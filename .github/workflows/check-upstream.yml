@@ -1,0 +1,71 @@
+name: Check upstream for updates
+
+on:
+  schedule:
+    # Every Monday at 08:00 UTC
+    - cron: "0 8 * * 1"
+  workflow_dispatch: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check upstream
+        id: upstream
+        run: |
+          bash scripts/check-upstream.sh --ci >> "$GITHUB_OUTPUT" || true
+
+      - name: Parse result
+        id: parse
+        run: |
+          IN_SYNC=$(grep '^in_sync=' "$GITHUB_OUTPUT" | cut -d= -f2 | head -1 || echo "unknown")
+          echo "in_sync=$IN_SYNC" >> "$GITHUB_OUTPUT"
+
+      - name: Open issue if out of sync
+        if: steps.parse.outputs.in_sync != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const output = `${{ steps.upstream.outputs }}`;
+
+            // Check if an open issue already exists to avoid duplicates.
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              labels: "upstream-update",
+            });
+
+            const existing = issues.data.find(i =>
+              i.title.startsWith("🔔 Upstream pi-autoresearch has new commits")
+            );
+            if (existing) {
+              console.log(`Issue #${existing.number} already open, skipping.`);
+              return;
+            }
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: "🔔 Upstream pi-autoresearch has new commits to review",
+              labels: ["upstream-update"],
+              body: [
+                "The weekly upstream check found new commits in",
+                "[davebcn87/pi-autoresearch](https://github.com/davebcn87/pi-autoresearch)",
+                "since our pinned SHA.",
+                "",
+                "## What to do",
+                "",
+                "1. Run `bash scripts/check-upstream.sh` locally to see the diff",
+                "2. Review commits that touch `extensions/pi-autoresearch/`, `skills/autoresearch-create/`, or `skills/autoresearch-finalize/`",
+                "3. Port any relevant changes into `plugins/autoresearch/skills/autoresearch/SKILL.md`, `autoresearch-finalize/SKILL.md`, or the helper scripts",
+                "4. Bump `version` in both manifest files",
+                "5. Update the pinned SHA and changelog in `UPSTREAM.md`",
+                "6. Close this issue once done (or with a note if changes weren't worth porting)",
+              ].join("\n"),
+            });

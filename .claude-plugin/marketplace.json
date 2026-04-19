@@ -1,0 +1,21 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "pi-autoresearch-skill",
+  "version": "0.1.0",
+  "description": "Autonomous experiment loop for Claude Code. Port of davebcn87/pi-autoresearch — try an idea, measure it, keep what works, discard what doesn't, repeat.",
+  "owner": {
+    "name": "Ronald",
+    "email": "ronald@orangewise.com"
+  },
+  "plugins": [
+    {
+      "name": "autoresearch",
+      "source": "./plugins/autoresearch",
+      "description": "Autonomous experiment loop skill. Iteratively optimizes a measurable metric (test speed, build time, bundle size, cdk synth time, training loss, anything benchmarkable) by hypothesizing, benchmarking, and keeping only improvements.",
+      "category": "development",
+      "keywords": ["optimization", "benchmarking", "autonomous", "experiment-loop", "performance"],
+      "homepage": "https://github.com/orangewise/pi-autoresearch-skill",
+      "license": "MIT"
+    }
+  ]
+}
