@@ -69,10 +69,14 @@ if [ "$MODE" = "--ci" ]; then
   echo "pinned=$PINNED_SHA"
   echo "upstream=$UPSTREAM_HEAD"
   echo "new_commits=$COMMIT_COUNT"
-  echo "---log---"
+  # Multi-line outputs use GitHub Actions' heredoc syntax so the runner can
+  # parse $GITHUB_OUTPUT correctly. Plain `git log` lines would break it.
+  echo "commits<<UPSTREAM_EOF"
   git log --oneline "$PINNED_SHA..$UPSTREAM_HEAD"
-  echo "---files---"
+  echo "UPSTREAM_EOF"
+  echo "files<<UPSTREAM_EOF"
   git diff --name-only "$PINNED_SHA..$UPSTREAM_HEAD"
+  echo "UPSTREAM_EOF"
   exit 1
 fi
 

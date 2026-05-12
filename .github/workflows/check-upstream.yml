@@ -17,30 +17,26 @@ jobs:
 
       - name: Check upstream
         id: upstream
-        run: |
-          bash scripts/check-upstream.sh --ci >> "$GITHUB_OUTPUT" || true
-
-      - name: Parse result
-        id: parse
-        run: |
-          IN_SYNC=$(grep '^in_sync=' "$GITHUB_OUTPUT" | cut -d= -f2 | head -1 || echo "unknown")
-          echo "in_sync=$IN_SYNC" >> "$GITHUB_OUTPUT"
+        run: bash scripts/check-upstream.sh --ci >> "$GITHUB_OUTPUT"
+        continue-on-error: true
 
       - name: Open issue if out of sync
-        if: steps.parse.outputs.in_sync != 'true'
+        if: steps.upstream.outputs.in_sync == 'false'
         uses: actions/github-script@v7
+        env:
+          PINNED: ${{ steps.upstream.outputs.pinned }}
+          UPSTREAM: ${{ steps.upstream.outputs.upstream }}
+          NEW_COMMITS: ${{ steps.upstream.outputs.new_commits }}
+          COMMITS: ${{ steps.upstream.outputs.commits }}
+          FILES: ${{ steps.upstream.outputs.files }}
         with:
           script: |
-            const output = `${{ steps.upstream.outputs }}`;
-
-            // Check if an open issue already exists to avoid duplicates.
             const issues = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: "open",
               labels: "upstream-update",
             });
-
             const existing = issues.data.find(i =>
               i.title.startsWith("🔔 Upstream pi-autoresearch has new commits")
             );
@@ -49,23 +45,36 @@ jobs:
               return;
             }
 
+            const { PINNED, UPSTREAM, NEW_COMMITS, COMMITS, FILES } = process.env;
+            const body = [
+              `The weekly upstream check found **${NEW_COMMITS}** new commit(s) in`,
+              "[davebcn87/pi-autoresearch](https://github.com/davebcn87/pi-autoresearch)",
+              `since our pinned SHA \`${PINNED}\` (upstream HEAD: \`${UPSTREAM}\`).`,
+              "",
+              "## Commits",
+              "```",
+              (COMMITS || "").trim() || "(none)",
+              "```",
+              "",
+              "## Files changed",
+              "```",
+              (FILES || "").trim() || "(none)",
+              "```",
+              "",
+              "## What to do",
+              "",
+              "1. Run `bash scripts/check-upstream.sh` locally to see the diff",
+              "2. Review commits that touch `extensions/pi-autoresearch/`, `skills/autoresearch-create/`, `skills/autoresearch-finalize/`, or `skills/autoresearch-hooks/`",
+              "3. Port any relevant changes into the matching plugin files",
+              "4. Bump `version` in both manifest files",
+              "5. Update the pinned SHA and changelog in `UPSTREAM.md`",
+              "6. Close this issue once done (or with a note if changes weren't worth porting)",
+            ].join("\n");
+
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: "🔔 Upstream pi-autoresearch has new commits to review",
               labels: ["upstream-update"],
-              body: [
-                "The weekly upstream check found new commits in",
-                "[davebcn87/pi-autoresearch](https://github.com/davebcn87/pi-autoresearch)",
-                "since our pinned SHA.",
-                "",
-                "## What to do",
-                "",
-                "1. Run `bash scripts/check-upstream.sh` locally to see the diff",
-                "2. Review commits that touch `extensions/pi-autoresearch/`, `skills/autoresearch-create/`, or `skills/autoresearch-finalize/`",
-                "3. Port any relevant changes into `plugins/autoresearch/skills/autoresearch/SKILL.md`, `autoresearch-finalize/SKILL.md`, or the helper scripts",
-                "4. Bump `version` in both manifest files",
-                "5. Update the pinned SHA and changelog in `UPSTREAM.md`",
-                "6. Close this issue once done (or with a note if changes weren't worth porting)",
-              ].join("\n"),
+              body,
             });
