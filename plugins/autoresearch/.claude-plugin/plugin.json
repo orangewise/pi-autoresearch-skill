@@ -1,6 +1,6 @@
 {
   "name": "autoresearch",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Autonomous experiment loop for Claude Code. Iteratively optimizes a measurable metric by hypothesizing, benchmarking, and keeping only improvements. Ported from davebcn87/pi-autoresearch.",
   "author": {
     "name": "Ronald"

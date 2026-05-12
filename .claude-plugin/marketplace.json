@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "pi-autoresearch-skill",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Autonomous experiment loop for Claude Code. Port of davebcn87/pi-autoresearch — try an idea, measure it, keep what works, discard what doesn't, repeat.",
   "owner": {
     "name": "Ronald",
