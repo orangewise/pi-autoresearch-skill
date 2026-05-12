@@ -60,15 +60,23 @@ Session files in your project root make it resumable across context resets:
 | `autoresearch.sh` | Your benchmark script (Claude writes this for you) |
 | `autoresearch.checks.sh` | *(optional)* Correctness checks — tests, types, lint |
 | `autoresearch.ideas.md` | *(optional)* Ideas backlog for deferred hypotheses |
-| `autoresearch.config.json` | *(optional)* Config — `maxIterations`, `workingDir` |
+| `autoresearch.config.json` | *(optional)* Config — `maxIterations`, `workingDir`, `direction`, `metricName`, `metricUnit` |
+| `autoresearch.hooks/before.sh` | *(optional)* Hook run before each iteration |
+| `autoresearch.hooks/after.sh` | *(optional)* Hook run after each `log.sh` |
 
 Helper scripts (installed into `scripts/autoresearch/`):
 
 | Script | Purpose |
 |---|---|
 | `log.sh` | Append a run to `autoresearch.jsonl` |
-| `results.sh` | Print a results table |
+| `results.sh` / `results.py` | Print a results table |
 | `bench-template.sh` | Starting template for `autoresearch.sh` |
+| `run-hook.sh` | Invoke `autoresearch.hooks/{before,after}.sh` with synthesized JSON stdin (requires `jq`) |
+| `compact-summary.py` | Print a deterministic six-section summary for resuming after context compaction |
+
+## Hooks
+
+Optional before/after hooks let you extend the loop with research lookups, notifications, anti-thrash steering, or learnings journaling without touching the main skill. See the `autoresearch-hooks` skill for the contract and copy-paste examples under `examples/{before,after}/`.
 
 ## Repo layout
 
@@ -89,8 +97,16 @@ Helper scripts (installed into `scripts/autoresearch/`):
 │           │   └── scripts/
 │           │       ├── log.sh
 │           │       ├── results.sh
+│           │       ├── results.py
 │           │       ├── bench-template.sh
+│           │       ├── run-hook.sh
+│           │       ├── compact-summary.py
 │           │       └── install-into-project.sh
+│           ├── autoresearch-hooks/
+│           │   ├── SKILL.md      # Optional before/after iteration hooks
+│           │   └── examples/
+│           │       ├── before/   # external-search, idea-rotator, anti-thrash, ...
+│           │       └── after/    # auto-tag-winners, learnings-journal, macos-notify
 │           └── autoresearch-finalize/
 │               ├── SKILL.md      # Finalize session into reviewable branches
 │               └── finalize.sh
