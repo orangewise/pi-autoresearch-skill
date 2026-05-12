@@ -35,8 +35,10 @@ def format_table(runs, direction):
     best_metric = find_best(runs, direction)
     lines = []
     lines.append("")
-    lines.append(f"  {'Run':>4}  {'Status':<13}  {'Metric':>10}  {'Commit':<8}  Description")
-    lines.append(f"  {'-'*4}  {'-'*13}  {'-'*10}  {'-'*8}  {'-'*30}")
+    lines.append(
+        f"  {'Run':>4}  {'Status':<13}  {'Metric':>10}  {'Commit':<8}  Description"
+    )
+    lines.append(f"  {'-' * 4}  {'-' * 13}  {'-' * 10}  {'-' * 8}  {'-' * 30}")
     for r in runs:
         is_best = (
             best_metric is not None
@@ -61,7 +63,10 @@ def format_table(runs, direction):
 
 def main():
     if len(sys.argv) != 3:
-        print(f"usage: {sys.argv[0]} <path/to/autoresearch.jsonl> <lower|higher>", file=sys.stderr)
+        print(
+            f"usage: {sys.argv[0]} <path/to/autoresearch.jsonl> <lower|higher>",
+            file=sys.stderr,
+        )
         sys.exit(2)
 
     path, direction = sys.argv[1], sys.argv[2]

@@ -4,12 +4,24 @@ import tempfile
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "plugins/autoresearch/skills/autoresearch/scripts"))
+sys.path.insert(
+    0,
+    str(
+        Path(__file__).parent.parent
+        / "plugins/autoresearch/skills/autoresearch/scripts"
+    ),
+)
 from results import find_best, format_table, load_runs
 
 
 def make_run(run, status, metric, description="test", commit="abc1234"):
-    return {"run": run, "status": status, "metric": metric, "description": description, "commit": commit}
+    return {
+        "run": run,
+        "status": status,
+        "metric": metric,
+        "description": description,
+        "commit": commit,
+    }
 
 
 def write_jsonl(runs):
@@ -41,11 +53,19 @@ class TestLoadRuns(unittest.TestCase):
 
 class TestFindBest(unittest.TestCase):
     def test_lower_is_better(self):
-        runs = [make_run(1, "baseline", 42.3), make_run(2, "kept", 39.1), make_run(3, "reverted", 45.0)]
+        runs = [
+            make_run(1, "baseline", 42.3),
+            make_run(2, "kept", 39.1),
+            make_run(3, "reverted", 45.0),
+        ]
         self.assertEqual(find_best(runs, "lower"), 39.1)
 
     def test_higher_is_better(self):
-        runs = [make_run(1, "baseline", 0.7), make_run(2, "kept", 0.85), make_run(3, "reverted", 0.6)]
+        runs = [
+            make_run(1, "baseline", 0.7),
+            make_run(2, "kept", 0.85),
+            make_run(3, "reverted", 0.6),
+        ]
         self.assertEqual(find_best(runs, "higher"), 0.85)
 
     def test_only_baseline_counts(self):

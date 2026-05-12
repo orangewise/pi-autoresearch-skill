@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Same shape as external-search but targets a local qmd collection:
+# a BM25 / vector / rerank index over your project's markdown.
+# Useful for private or project-specific corpora (design docs, ADRs,
+# runbooks, past postmortems).
+#
+# One-time setup: qmd collection add <path> --name <name>
+# See https://www.npmjs.com/package/qmd
+
+set -euo pipefail
+
+readonly DOCS_FILE="autoresearch.docs.md"
+readonly RESULT_LIMIT=5
+
+query_from_agent_notes() {
+  jq -r '
+    .last_run.description //
+    .session.goal //
+    empty
+  ' <<<"$1"
+}
+
+fetch_docs() {
+  qmd query "$1" -n "$RESULT_LIMIT"
+}
+
+input="$(cat)"
+query=$(query_from_agent_notes "$input")
+[ -z "$query" ] && exit 0
+
+workdir="$(jq -r '.cwd' <<<"$input")"
+fetch_docs "$query" > "$workdir/$DOCS_FILE"
+echo "Docs saved → $DOCS_FILE (query: $query)"

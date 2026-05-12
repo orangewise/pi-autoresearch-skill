@@ -7,9 +7,9 @@ This repo is a **port**, not a fork, of [`davebcn87/pi-autoresearch`](https://gi
 | Field | Value |
 |---|---|
 | Upstream repo | `https://github.com/davebcn87/pi-autoresearch` |
-| Pinned commit | `5a29db080131449edc6d25a6b351b12879063366` |
-| Short SHA | `5a29db0` |
-| Ported on | `2026-04-18` |
+| Pinned commit | `84232861a09e753f63bceda46852f0ddbb4c9afd` |
+| Short SHA | `8423286` |
+| Ported on | `2026-05-12` |
 | Upstream license | MIT |
 
 When updating, bump `Pinned commit` and `Ported on`, and add a row to the changelog at the bottom of this file.
@@ -21,6 +21,9 @@ When updating, bump `Pinned commit` and `Ported on`, and add a row to the change
 | `extensions/pi-autoresearch/` (pi extension with TS tools) | `plugins/autoresearch/` (Claude Code plugin) |
 | `skills/autoresearch-create/` (pi skill) | `plugins/autoresearch/skills/autoresearch/SKILL.md` |
 | `skills/autoresearch-finalize/` (pi skill) | `plugins/autoresearch/skills/autoresearch-finalize/SKILL.md` |
+| `skills/autoresearch-hooks/` (pi skill) | `plugins/autoresearch/skills/autoresearch-hooks/SKILL.md` |
+| `extensions/pi-autoresearch/hooks.ts` (auto-invoked by pi) | `scripts/run-hook.sh` (agent invokes manually in the loop) |
+| `extensions/pi-autoresearch/compaction.ts` (`session_before_compact`) | `scripts/compact-summary.py` (agent invokes before/after compaction) |
 | `skills/autoresearch-finalize/finalize.sh` (uses Node.js) | `plugins/autoresearch/skills/autoresearch-finalize/finalize.sh` (ported to python3) |
 | Tool: `init_experiment` | "Starting a session" section of `SKILL.md` |
 | Tool: `run_experiment` | `bash autoresearch.sh` via Bash tool |
@@ -57,3 +60,4 @@ A GitHub Action (`.github/workflows/check-upstream.yml`) runs this weekly and op
 | Date | This version | Upstream SHA | Notes |
 |---|---|---|---|
 | 2026-04-18 | 0.1.0 | `5a29db0` | Initial port. Skill + session-file contract + helper scripts. |
+| 2026-05-12 | 0.2.0 | `8423286` | Catch-up to upstream v1.4.0. **Ported:** v1.1.0 hooks (new `autoresearch-hooks` skill, `run-hook.sh` wrapper, adapted examples), v1.2.0 trust auto-compaction (added "Long-running loops and context" section), v1.3.0 deterministic compaction summary (`compact-summary.py`). **N/A for Claude Code:** v1.0.1 (pi resume-timer / `/off` abort / `patternProperties` schema / dashboard shortcut fixes — pi-extension-specific), v1.4.0 (configurable pi dashboard shortcuts — pi UI-specific). Hook examples adapted to our status names (`kept`/`reverted`/`failed`/`checks_failed`) and absence of an `asi` sub-object in `autoresearch.jsonl`. |

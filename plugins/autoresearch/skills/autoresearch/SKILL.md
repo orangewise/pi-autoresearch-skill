@@ -29,7 +29,13 @@ Five files live in the **project root** and make the loop resumable across conte
 | `autoresearch.sh` | Benchmark script. Must emit `METRIC name=value` lines. |
 | `autoresearch.checks.sh` | *(optional)* Correctness backpressure — tests, types, lint. Runs after every passing benchmark. |
 | `autoresearch.ideas.md` | *(optional)* Ideas backlog for complex/deferred hypotheses. |
-| `autoresearch.config.json` | *(optional)* Session config — `maxIterations`, `workingDir`. |
+| `autoresearch.config.json` | *(optional)* Session config — `maxIterations`, `workingDir`, `direction`, `metricName`, `metricUnit`. |
+| `autoresearch.hooks/before.sh` | *(optional)* Hook run before each iteration. See the `autoresearch-hooks` skill. |
+| `autoresearch.hooks/after.sh` | *(optional)* Hook run after each `log.sh` call. See the `autoresearch-hooks` skill. |
+
+All `autoresearch.*` paths (including `autoresearch.hooks/**`) survive the loop's revert step.
+
+> **Note on `jq`.** `run-hook.sh` needs `jq` on PATH to build the hook input JSON. If `jq` is missing, the hook is silently skipped. Install with `brew install jq` / `apt install jq`.
 
 Helper scripts (copy into project once with `install-into-project.sh`):
 
@@ -38,6 +44,8 @@ Helper scripts (copy into project once with `install-into-project.sh`):
 | `log.sh` | Append a run to `autoresearch.jsonl` |
 | `results.sh` | Print a results table |
 | `bench-template.sh` | Starting template for `autoresearch.sh` |
+| `run-hook.sh` | Invoke `autoresearch.hooks/{before,after}.sh` with synthesized JSON stdin |
+| `compact-summary.py` | Print a deterministic 6-section summary for resuming after context compaction |
 
 ## First-time project setup
 
@@ -158,13 +166,23 @@ Create in the project root to configure session behaviour:
 |---|---|
 | `workingDir` | Override the directory for all autoresearch file I/O, command execution, and git operations. Absolute or relative to the session cwd. Fails if the directory doesn't exist. |
 | `maxIterations` | Maximum experiments before stopping. Useful for cost control on long-running loops. |
+| `direction` | `"lower"` or `"higher"`. Used by `results.sh`, `run-hook.sh`, and `compact-summary.py` to identify the best metric. Defaults to `"lower"`. |
+| `metricName` | Display name for the primary metric (e.g. `"duration"`). Used by hooks and the compaction summary. |
+| `metricUnit` | Display unit (e.g. `"s"`, `"ms"`, `"KB"`). Used by hooks and the compaction summary. |
 
 ## The loop
 
 **LOOP FOREVER. Never ask "should I continue?" — the user expects autonomous work. NEVER STOP until interrupted.**
 
+### 0. Before-hook (optional)
+If `autoresearch.hooks/before.sh` exists and is executable, run:
+```bash
+bash scripts/autoresearch/run-hook.sh before
+```
+Its stdout is a steer for this iteration — read it before hypothesizing. Silent output = nothing to do.
+
 ### 1. Hypothesize
-Pick one specific change. Consult "What's Been Tried" and `autoresearch.ideas.md`. State the hypothesis in one sentence.
+Pick one specific change. Consult "What's Been Tried", `autoresearch.ideas.md`, and any output from the before-hook. State the hypothesis in one sentence.
 
 ### 2. Implement
 Make the change. Keep the diff focused — one idea per run. Respect constraints and off-limits boundaries.
@@ -198,6 +216,13 @@ bash scripts/autoresearch/log.sh "<metric_value>" "<kept|reverted|failed|checks_
 ```
 The fourth argument is optional JSON for secondary metrics. Omit it if not tracking secondaries.
 
+### 5b. After-hook (optional)
+If `autoresearch.hooks/after.sh` exists and is executable, run:
+```bash
+bash scripts/autoresearch/run-hook.sh after
+```
+Its stdout (if any) is context for the next iteration.
+
 ### 6. Update autoresearch.md
 Append a line to **What's Been Tried**. If the idea is a dead end (regressed or has a structural reason to fail), note it with a one-line reason so future iterations don't repeat it.
 
@@ -222,6 +247,18 @@ Immediately begin the next iteration. **Do not pause for confirmation.** If the 
 - **Think longer when stuck.** Re-read source files, study output, reason about what the CPU is actually doing. The best ideas come from deep understanding, not random variations.
 - **Crashes:** fix if trivial, otherwise log and move on. Don't over-invest.
 - **Branch isolation.** Each session runs on its own branch. Never run on `main`.
+
+## Long-running loops and context
+
+Claude Code auto-compacts when context fills — trust it. Don't budget tokens or predict your own next iteration's footprint.
+
+When a compaction window is imminent (or when starting a fresh session on an existing branch), run:
+
+```bash
+python3 scripts/autoresearch/compact-summary.py
+```
+
+It prints a deterministic six-section markdown block (Session / Experiment Rules / Ideas Backlog / Recent Runs / Next Step) that embeds `autoresearch.md` and `autoresearch.ideas.md` and tails the last 50 runs from `autoresearch.jsonl`. A resuming agent reading that summary has everything needed to continue — no need to re-read the source files.
 
 ## Viewing progress
 
